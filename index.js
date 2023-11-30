@@ -1,5 +1,8 @@
 const express = require('express')
 const app = express()
+const morgan = require('morgan')
+
+app.use(express.json())
 
 let persons = [
     { 
@@ -52,6 +55,35 @@ app.delete('/api/persons/:id', (req,res) =>{
     const id = Number(req.params.id)
     persons = persons.filter(person => person.id !== id)
     res.status(204).end()
+})
+
+function generateId(){
+    const maxId = persons.length > 0 ? Math.max(...persons.map(person => person.id)) : 0
+    return maxId + 1
+}
+app.use(morgan('tiny'))
+app.post('/api/persons', (req,res) => {
+    const body = req.body
+    const checkForDuplicate = persons.find(person => person.name === body.name || person.number === body.number)
+    if (!body.name || !body.number){
+        return res.status(400).json({
+            error: "Name or number Number missing"
+        })
+    } else if (checkForDuplicate) {
+        return res.status(400).json({
+            error: "Number or Name Duplicate"
+        })
+    }
+    const newPerson = {
+        id: generateId(), 
+        name: body.name,
+        number: body.number
+    }
+
+    persons = persons.concat(newPerson)
+    res.json(newPerson)
+
+    
 })
 const PORT = 3000
 app.listen(PORT)
